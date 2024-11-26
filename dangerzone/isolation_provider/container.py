@@ -168,6 +168,10 @@ class Container(IsolationProvider):
     ) -> subprocess.Popen:
         container_runtime = container_utils.get_runtime()
         security_args = self.get_runtime_security_args()
+        debug_args = []
+        if self.debug:
+            debug_args += ["-e", "RUNSC_DEBUG=1"]
+
         enable_stdin = ["-i"]
         set_name = ["--name", name]
         prevent_leakage_args = ["--rm"]
@@ -177,6 +181,7 @@ class Container(IsolationProvider):
         args = (
             ["run"]
             + security_args
+            + debug_args
             + prevent_leakage_args
             + enable_stdin
             + set_name
