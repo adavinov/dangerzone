@@ -5,7 +5,9 @@ import platform
 import signal
 import subprocess
 import sys
+import threading
 from abc import ABC, abstractmethod
+from queue import Queue
 from typing import IO, Callable, Iterator, Optional
 
 import fitz
@@ -92,6 +94,7 @@ class IsolationProvider(ABC):
             self.proc_stderr = subprocess.PIPE
         else:
             self.proc_stderr = subprocess.DEVNULL
+        self.stderr_queue: Queue = Queue()
 
     def should_capture_stderr(self) -> bool:
         return self.debug or getattr(sys, "dangerzone_dev", False)
@@ -363,3 +366,23 @@ class IsolationProvider(ABC):
                     f"{debug_log}"  # no need for an extra newline here
                     f"{DOC_TO_PIXELS_LOG_END}"
                 )
+
+    def _stream_stderr(self, stderr: IO[bytes], queue: Queue) -> None:
+        """Read stderr in a separate thread to avoid blocking"""
+        try:
+            for line in stderr:
+                queue.put(line)
+                if self.debug:
+                    log.debug(line.decode().strip())
+        except (ValueError, IOError) as e:
+            log.debug(f"Stderr stream closed: {e}")
+
+    def start_stderr_thread(self, process: subprocess.Popen) -> None:
+        """Start a thread to read stderr from the process"""
+        if process.stderr:
+            stderr_thread = threading.Thread(
+                target=self._stream_stderr,
+                args=(process.stderr, self.stderr_queue),
+                daemon=True,
+            )
+            stderr_thread.start()

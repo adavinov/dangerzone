@@ -154,7 +154,7 @@ class Container(IsolationProvider):
             args,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=self.proc_stderr,
+            stderr=subprocess.PIPE,
             startupinfo=startupinfo,
             # Start the conversion process in a new session, so that we can later on
             # kill the process group, without killing the controlling script.
@@ -189,7 +189,14 @@ class Container(IsolationProvider):
             + command
         )
         args = [container_runtime] + args
-        return self.exec(args)
+        args_str = " ".join(shlex.quote(s) for s in args)
+        log.info("> " + args_str)
+
+        process = self.exec(args)
+        # Start stderr reader thread, attaching it to the process
+        self.start_stderr_thread(process)
+
+        return process
 
     def kill_container(self, name: str) -> None:
         """Terminate a spawned container.

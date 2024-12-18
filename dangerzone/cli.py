@@ -46,7 +46,8 @@ def print_header(s: str) -> None:
     "--debug",
     "debug",
     flag_value=True,
-    help="Run Dangerzone in debug mode, to get logs from gVisor.")
+    help="Run Dangerzone in debug mode, to get logs from gVisor.",
+)
 @click.version_option(version=get_version(), message="%(version)s")
 @errors.handle_document_errors
 def cli_main(
