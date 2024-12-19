@@ -5,7 +5,9 @@ import platform
 import signal
 import subprocess
 import sys
+import threading
 from abc import ABC, abstractmethod
+from queue import Queue
 from typing import IO, Callable, Iterator, Optional
 
 import fitz
@@ -86,11 +88,20 @@ class IsolationProvider(ABC):
     Abstracts an isolation provider
     """
 
-    def __init__(self) -> None:
-        if getattr(sys, "dangerzone_dev", False) is True:
+    def __init__(self, debug: bool = False) -> None:
+        self.debug = debug
+        if self.should_capture_stderr():
             self.proc_stderr = subprocess.PIPE
         else:
             self.proc_stderr = subprocess.DEVNULL
+        self.stderr_queue: Queue = Queue()
+
+    def should_capture_stderr(self) -> bool:
+        return self.debug or getattr(sys, "dangerzone_dev", False)
+
+    @staticmethod
+    def is_runtime_available() -> bool:
+        return True
 
     @abstractmethod
     def install(self) -> bool:
@@ -344,9 +355,9 @@ class IsolationProvider(ABC):
             )
 
             # Read the stderr of the process only if:
-            # * Dev mode is enabled.
+            # * We're in debug mode
             # * The process has exited (else we risk hanging).
-            if getattr(sys, "dangerzone_dev", False) and p.poll() is not None:
+            if self.should_capture_stderr() and p.poll() is not None:
                 assert p.stderr
                 debug_log = read_debug_text(p.stderr, MAX_CONVERSION_LOG_CHARS)
                 log.info(
@@ -355,3 +366,23 @@ class IsolationProvider(ABC):
                     f"{debug_log}"  # no need for an extra newline here
                     f"{DOC_TO_PIXELS_LOG_END}"
                 )
+
+    def _stream_stderr(self, stderr: IO[bytes], queue: Queue) -> None:
+        """Read stderr in a separate thread to avoid blocking"""
+        try:
+            for line in stderr:
+                queue.put(line)
+                if self.debug:
+                    log.debug(line.decode().strip())
+        except (ValueError, IOError) as e:
+            log.debug(f"Stderr stream closed: {e}")
+
+    def start_stderr_thread(self, process: subprocess.Popen) -> None:
+        """Start a thread to read stderr from the process"""
+        if process.stderr:
+            stderr_thread = threading.Thread(
+                target=self._stream_stderr,
+                args=(process.stderr, self.stderr_queue),
+                daemon=True,
+            )
+            stderr_thread.start()

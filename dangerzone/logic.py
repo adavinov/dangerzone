@@ -66,11 +66,25 @@ class DangerzoneCore(object):
     ) -> None:
         def convert_doc(document: Document) -> None:
             try:
+                # Clear any existing stderr output
+                while not self.isolation_provider.stderr_queue.empty():
+                    self.isolation_provider.stderr_queue.get_nowait()
+
                 self.isolation_provider.convert(
                     document,
                     ocr_lang,
                     stdout_callback,
                 )
+
+                # Process any stderr output that was captured
+                while not self.isolation_provider.stderr_queue.empty():
+                    try:
+                        line = self.isolation_provider.stderr_queue.get_nowait()
+                        if stdout_callback:
+                            stdout_callback(True, line.decode().strip(), -1)
+                    except Exception as e:
+                        log.error(f"Error processing stderr: {e}")
+
             except Exception:
                 log.exception(
                     f"Unexpected error occurred while converting '{document}'"
