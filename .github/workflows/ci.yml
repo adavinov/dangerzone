@@ -31,7 +31,7 @@ jobs:
     container:
       image: debian:bookworm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install dev. dependencies
         run: |-
           apt-get update
@@ -47,7 +47,7 @@ jobs:
   build-container-image:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -80,7 +80,7 @@ jobs:
     name: Download and cache Tesseract data
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Cache Tessdata
       id: cache-tessdata
       uses: actions/cache@v4
@@ -106,7 +106,7 @@ jobs:
     env:
       DUMMY_CONVERSION: 1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -155,7 +155,7 @@ jobs:
     env:
       DUMMY_CONVERSION: 1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -203,7 +203,7 @@ jobs:
             version: trixie
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - uses: actions/setup-python@v5
         with:
@@ -273,7 +273,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - uses: actions/setup-python@v5
         with:
@@ -314,7 +314,7 @@ jobs:
         version: ["40", "41"]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Login to GHCR
         run: |
@@ -405,7 +405,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - uses: actions/setup-python@v5
         with:
