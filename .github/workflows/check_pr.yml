@@ -11,7 +11,7 @@ jobs:
         version: bookworm
       steps:
         - name: Checkout
-          uses: actions/checkout@v4
+          uses: actions/checkout@v5
         - name: prevent fixup commits
           run: |
             git fetch origin
@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: ensure CHANGELOG.md is populated
